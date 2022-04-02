@@ -4,6 +4,8 @@ import {
   SignCommand,
   SignCommandInput,
   SigningAlgorithmSpec,
+  GetPublicKeyCommand,
+  GetPublicKeyCommandInput,
   VerifyCommand,
   VerifyCommandInput,
 } from '@aws-sdk/client-kms';
@@ -26,6 +28,25 @@ const config: KMSClientConfig = {
   maxAttempts: 2,
 };
 const client = new KMSClient(config);
+
+const ginput: GetPublicKeyCommandInput = {
+  KeyId: keyId,
+};
+const gcommand = new GetPublicKeyCommand(ginput);
+
+client
+  .send(gcommand)
+  .then((result) => {
+    console.log(
+      `publickey: ${Buffer.from(
+        new TextDecoder().decode(result.PublicKey)
+      ).toString('base64')}\n`
+    );
+  })
+  .catch((err) => {
+    console.error(`get public key error: ${err}`);
+  });
+
 const signinput: SignCommandInput = {
   KeyId: keyId,
   Message: message,
@@ -38,8 +59,11 @@ const scommand = new SignCommand(signinput);
 client
   .send(scommand)
   .then((result) => {
-    const signature = new TextDecoder().decode(result.Signature);
-    console.log(signature);
+    const signature = Buffer.from(
+      new TextDecoder().decode(result.Signature)
+    ).toString('base64');
+
+    console.log(`signature: ${signature}`);
 
     // verify まで一貫して実施してみる
     // 実際は分けて実行する
